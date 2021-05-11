@@ -1,4 +1,5 @@
 {
+Anatomia de un preset de Midi Control Center:
 	"device": "MiniLab mkII",
     Explicacion:
     10_1 = HARDWARE_ENCODER_IDS
