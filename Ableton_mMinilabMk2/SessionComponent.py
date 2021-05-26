@@ -5,25 +5,16 @@ from itertools import product
 
 from ableton.v2.base import liveobj_valid
 
+from Ableton_mMinilabMk2.Constants import EMPTY_VALUE, SELECTED_VALUE, TRACK_ARMED_VALUE, TRACK_ARMED_MUTED_VALUE, \
+    TRACK_MUTED_VALUE, TRIGGERED_TO_RECORD_VALUE, RECORDING_VALUE, TRACK_MUTED_RECORDING_VALUE, TRIGGERED_TO_PLAY_VALUE, \
+    STARTED_VALUE, TRACK_MUTED_STARTED_VALUE, STOPPED_VALUE
 from _Framework.ClipSlotComponent import ClipSlotComponent as ClipSlotComponentBase
 from _Framework.Control import EncoderControl
 from _Framework.SceneComponent import SceneComponent as SceneComponentBase
 from _Framework.SessionComponent import SessionComponent as SessionComponentBase
+import logging
 
-EMPTY_VALUE = 0  # - apagado
-SELECTED_VALUE = 127  # - blanco
-BLUE = 16
-TRACK_ARMED_VALUE = 17  # - magenta
-TRACK_ARMED_MUTED_VALUE = 16  # - azul
-TRACK_MUTED_VALUE = 20  # - cyan
-TRIGGERED_TO_RECORD_VALUE = 17  # - magenta
-RECORDING_VALUE = 1  # - red
-TRACK_MUTED_RECORDING_VALUE = 16  # - azul
-TRIGGERED_TO_PLAY_VALUE = 4  # - green
-STARTED_VALUE = 4  # - green
-TRACK_MUTED_STARTED_VALUE = 16  # - azul
-STOPPED_VALUE = 5  # - yellow
-TRACK_MUTED_STOPPED_VALUE = 16  # - azul
+logger = logging.getLogger(__name__)
 
 
 class ClipSlotComponent(ClipSlotComponentBase):
@@ -47,10 +38,67 @@ class ClipSlotComponent(ClipSlotComponentBase):
             if liveobj_valid(self._clip_slot):
                 track = self._clip_slot.canonical_parent
                 slot_or_clip = self._clip_slot.clip if self.has_clip() else self._clip_slot
-                value_to_send = self._led_feedback_value(track, slot_or_clip)
+                # value_to_send = self._led_feedback_value(track, slot_or_clip)
+                value_to_send = self.x_led_feedback_value(track, self._clip_slot)
+
             self._led.send_value((value_to_send,))
+
+    def x_led_feedback_value(self, track, clip_slot):
+        muted = False
+        if track.mute:
+            muted = True
+        if clip_slot.controls_other_clips:
+            if clip_slot.is_playing:
+                if muted:
+                    return TRACK_MUTED_STARTED_VALUE
+                return STARTED_VALUE
+            if muted:
+                return TRACK_MUTED_VALUE
+            return STOPPED_VALUE
+        if self.has_clip():
+            if clip_slot.is_triggered:
+                if muted:
+                    if clip_slot.will_record_on_start:
+                        return TRACK_ARMED_MUTED_VALUE
+                    return TRACK_ARMED_MUTED_VALUE
+                if clip_slot.will_record_on_start:
+                    return TRIGGERED_TO_RECORD_VALUE
+                return TRIGGERED_TO_PLAY_VALUE
+            elif clip_slot.is_playing:
+                if muted:
+                    if clip_slot.is_recording:
+                        return TRACK_MUTED_RECORDING_VALUE
+                    return TRACK_MUTED_STARTED_VALUE
+                if clip_slot.is_recording:
+                    return RECORDING_VALUE
+                return STARTED_VALUE
+            else:
+                if muted:
+                    if self._track_is_armed(track):
+                        return TRACK_ARMED_MUTED_VALUE
+                    return TRACK_MUTED_VALUE
+                if self._track_is_armed(track):
+                    return TRACK_ARMED_VALUE
+                return STOPPED_VALUE
+        else:
+            if self._track_is_armed(track):
+                if muted:
+                    return TRACK_ARMED_MUTED_VALUE
+                return TRACK_ARMED_VALUE
+            if muted:
+                return TRACK_MUTED_VALUE
+            return SELECTED_VALUE
+    
     
     def _led_feedback_value(self, track, slot_or_clip):
+        try:
+            if slot_or_clip.controls_other_clips:
+                # TODO: Desarrollar esto? Si el track es foldable y tiene clip(s) debe mostralo
+                if slot_or_clip.is_playing:
+                    return STARTED_VALUE
+                return STOPPED_VALUE
+        except AttributeError:
+            track = track
         if self.has_clip():
             if slot_or_clip.is_triggered:
                 if slot_or_clip.will_record_on_start:
@@ -115,7 +163,10 @@ class SessionComponent(SessionComponentBase):
     
     def on_selected_track_changed(self):
         super(SessionComponent, self).on_selected_track_changed()
-        tracks = list(self.song().tracks)
+        # * Arturia default
+        # tracks = list(self.song().tracks)
+        # * groups corrected
+        tracks = list(self.song().visible_tracks)
         selected_track = self.song().view.selected_track
         if selected_track in tracks:
             track_index = tracks.index(selected_track)
@@ -123,8 +174,9 @@ class SessionComponent(SessionComponentBase):
             self.set_offsets(new_track_offset, self.scene_offset())
     
     def set_clip_slot_leds(self, leds):
-        # assert not leds or leds.width() == self._num_tracks and leds.height() == 1
-        assert not leds or leds.width() == self._num_tracks
+        assert not leds or leds.width() == self._num_tracks and leds.height() == 1
+        # assert not leds or leds.width() == self._num_tracks
+        logger.info("session pad offset ::: " + str(self._num_tracks))
         if leds:
             for led, (x, y) in leds.iterbuttons():
                 scene = self.scene(y)
@@ -135,4 +187,3 @@ class SessionComponent(SessionComponentBase):
                 scene = self.scene(y)
                 slot = scene.clip_slot(x)
                 slot.set_led(None)
-
