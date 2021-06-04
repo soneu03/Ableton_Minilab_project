@@ -1,8 +1,11 @@
 # * Numero maximo y minimo de subdivisiones de loop
 LOOP_MIN_BEATS = 0.25
-LOOP_MAX_BEATS = 16
+LOOP_MAX_BEATS = 32
 # * Al cambiar de Device, se deben collapsar los no seleccionados?
 IN_DEVICE_VIEW_COLLAPSED = False
+# * Al seleccionar el modo clip, el indicador de sesion
+# * debe enfocarse en el clip reproducido?
+SESSION_FOLLOWS_CLIP = True
 # * Led colors
 BLACK = 0  # - apagado
 RED = 1  # - rojo

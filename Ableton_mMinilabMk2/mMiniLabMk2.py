@@ -1,10 +1,10 @@
 # Embedded file name: /Users/versonator/Jenkins/live/output/Live/mac_64_static/Release/python-bundle/MIDI Remote Scripts/MiniLab_mkII/MiniLabMk2.py
 from __future__ import absolute_import, print_function, unicode_literals
-
+import time
 import logging
 from functools import partial
 from itertools import izip
-
+from itertools import cycle
 from .Constants import *
 
 logger = logging.getLogger(__name__)
@@ -116,6 +116,7 @@ class mMiniLabMk2(ArturiaControlSurface):
             self.enc0_button = False
             self.enc8_button = False
             self.sub_devices = []
+            self.scrubbing_clips = []
             self.show_message("mMiniLabMk2 cargando...")
             logger.info("soneu remote script loaded")
             self._create_controls()
@@ -232,6 +233,7 @@ class mMiniLabMk2(ArturiaControlSurface):
                     for col in xrange(8)] for row in xrange(2)]
         )
         
+        
         self._pad_leds = ButtonMatrixElement(
             rows=[[SysexValueControl(
                 message_prefix=SETUP_MSG_PREFIX + (
@@ -273,72 +275,7 @@ class mMiniLabMk2(ArturiaControlSurface):
             name=u'Hardware_Live_Mode_Switch'
         )
     
-    def _setup_control_listeners(self):
-        if not self._pads2[8].value_has_listener(self._pads2_n8):
-            self._pads2[8].add_value_listener(self._pads2_n8, identify_sender=False)
-        if not self._pads2[9].value_has_listener(self._pads2_n9):
-            self._pads2[9].add_value_listener(self._pads2_n9, identify_sender=False)
-        if not self._pads2[10].value_has_listener(self._pads2_n10):
-            self._pads2[10].add_value_listener(self._pads2_n10, identify_sender=False)
-        if not self._pads2[11].value_has_listener(self._pads2_n11):
-            self._pads2[11].add_value_listener(self._pads2_n11, identify_sender=False)
-        if not self._pads2[12].value_has_listener(self._pads2_n12):
-            self._pads2[12].add_value_listener(self._pads2_n12, identify_sender=False)
-        if not self._pads2[13].value_has_listener(self._pads2_n13):
-            self._pads2[13].add_value_listener(self._pads2_n13, identify_sender=False)
-        if not self._pads2[14].value_has_listener(self._pads2_n14):
-            self._pads2[14].add_value_listener(self._pads2_n14, identify_sender=False)
-        if not self._pads2[15].value_has_listener(self._pads2_n15):
-            self._pads2[15].add_value_listener(self._pads2_n15, identify_sender=False)
-        
-        # * _pads1
-        if not self._pads[0].value_has_listener(self._pads_n0):
-            self._pads[0].add_value_listener(self._pads_n0, identify_sender=False)
-        if not self._pads[1].value_has_listener(self._pads_n1):
-            self._pads[1].add_value_listener(self._pads_n1, identify_sender=False)
-        if not self._pads[2].value_has_listener(self._pads_n2):
-            self._pads[2].add_value_listener(self._pads_n2, identify_sender=False)
-        if not self._pads[3].value_has_listener(self._pads_n3):
-            self._pads[3].add_value_listener(self._pads_n3, identify_sender=False)
-        if not self._pads[4].value_has_listener(self._pads_n4):
-            self._pads[4].add_value_listener(self._pads_n4, identify_sender=False)
-        if not self._pads[5].value_has_listener(self._pads_n5):
-            self._pads[5].add_value_listener(self._pads_n5, identify_sender=False)
-        if not self._pads[6].value_has_listener(self._pads_n6):
-            self._pads[6].add_value_listener(self._pads_n6, identify_sender=False)
-        if not self._pads[7].value_has_listener(self._pads_n7):
-            self._pads[7].add_value_listener(self._pads_n7, identify_sender=False)
-            
-            # encoders listener
-        if not self._knob6_encoder.value_has_listener(self._encoder_n5):
-            self._knob6_encoder.add_value_listener(self._encoder_n5, identify_sender=False)
-        if not self._knob14_encoder.value_has_listener(self._encoder_n13):
-            self._knob14_encoder.add_value_listener(self._encoder_n13, identify_sender=False)
-        if not self._knob7_encoder.value_has_listener(self._encoder_n6):
-            self._knob7_encoder.add_value_listener(self._encoder_n6, identify_sender=False)
-        if not self._knob15_encoder.value_has_listener(self._encoder_n14):
-            self._knob15_encoder.add_value_listener(self._encoder_n14, identify_sender=False)
-        if not self._pan_encoder.value_has_listener(self._encoder_n7):
-            self._pan_encoder.add_value_listener(self._encoder_n7, identify_sender=False)
-        if not self._volume_encoder.value_has_listener(self._encoder_n15):
-            self._volume_encoder.add_value_listener(self._encoder_n15, identify_sender=False)
-
-        # _knob0_encoder
-        if not self._knob0_encoder.value_has_listener(self._encoder_n0):
-            self._knob0_encoder.add_value_listener(self._encoder_n0, identify_sender=False)
-        if not self._knob0_button.value_has_listener(self._encoder_n0_button):
-            self._knob0_button.add_value_listener(self._encoder_n0_button, identify_sender=False)
-        
-        if not self._knob8_encoder.value_has_listener(self._encoder_n8):
-            self._knob8_encoder.add_value_listener(self._encoder_n8, identify_sender=False)
-        if not self._knob8_button.value_has_listener(self._encoder_n8_button):
-            self._knob8_button.add_value_listener(self._encoder_n8_button, identify_sender=False)
-        
-        if not self._switchpad_button.value_has_listener(self._switchpad_value_on_press):
-            self._switchpad_button.add_value_listener(self._switchpad_value_on_press, identify_sender=False)
-        
-        if not self._shift_button.value_has_listener(self._shift_value_on_press):
-            self._shift_button.add_value_listener(self._shift_value_on_press, identify_sender=False)
+    
     
     # region ::: region Create
     
@@ -356,6 +293,7 @@ class mMiniLabMk2(ArturiaControlSurface):
     @subject_slot(u'live_mode')
     def _on_live_mode_changed(self, is_live_mode_on):
         _off_leds(self)
+        
         self._transport.set_enabled(is_live_mode_on)
         self._session.set_enabled(is_live_mode_on)
         self._mixer.set_enabled(is_live_mode_on)
@@ -383,7 +321,7 @@ class mMiniLabMk2(ArturiaControlSurface):
         
         self.set_device_component(self._device)
         self._device.set_on_off_button(None)
-    
+        
     def _create_transport(self):
         self._transport = TransportComponent(
             name=u'Transport', is_enabled=False,
@@ -396,6 +334,7 @@ class mMiniLabMk2(ArturiaControlSurface):
         self._live = Live.Application.get_application()
         self.app_instance = self._live.view
         self.song_instance = self._transport.song()
+        
     
     def _create_session(self):
         self._session = self.session_component_type(
@@ -422,7 +361,8 @@ class mMiniLabMk2(ArturiaControlSurface):
         )
         # self._mixer.set_selected_track_arm_control(self._knob8_button)
         self._mixer.set_selected_track_arm_control(None)
-        if TWO_SENDS == True:
+        
+        if TWO_SENDS:
             self._mixer.set_return_volume_controls(self._return_encoders)
     
     def _collect_setup_messages(self):
@@ -455,6 +395,73 @@ class mMiniLabMk2(ArturiaControlSurface):
     
     # endregion
     
+    def _setup_control_listeners(self):
+        if not self._pads2[8].value_has_listener(self._pads2_n8):
+            self._pads2[8].add_value_listener(self._pads2_n8, identify_sender=False)
+        if not self._pads2[9].value_has_listener(self._pads2_n9):
+            self._pads2[9].add_value_listener(self._pads2_n9, identify_sender=False)
+        if not self._pads2[10].value_has_listener(self._pads2_n10):
+            self._pads2[10].add_value_listener(self._pads2_n10, identify_sender=False)
+        if not self._pads2[11].value_has_listener(self._pads2_n11):
+            self._pads2[11].add_value_listener(self._pads2_n11, identify_sender=False)
+        if not self._pads2[12].value_has_listener(self._pads2_n12):
+            self._pads2[12].add_value_listener(self._pads2_n12, identify_sender=False)
+        if not self._pads2[13].value_has_listener(self._pads2_n13):
+            self._pads2[13].add_value_listener(self._pads2_n13, identify_sender=False)
+        if not self._pads2[14].value_has_listener(self._pads2_n14):
+            self._pads2[14].add_value_listener(self._pads2_n14, identify_sender=False)
+        if not self._pads2[15].value_has_listener(self._pads2_n15):
+            self._pads2[15].add_value_listener(self._pads2_n15, identify_sender=False)
+    
+        # * _pads1
+        if not self._pads[0].value_has_listener(self._pads_n0):
+            self._pads[0].add_value_listener(self._pads_n0, identify_sender=False)
+        if not self._pads[1].value_has_listener(self._pads_n1):
+            self._pads[1].add_value_listener(self._pads_n1, identify_sender=False)
+        if not self._pads[2].value_has_listener(self._pads_n2):
+            self._pads[2].add_value_listener(self._pads_n2, identify_sender=False)
+        if not self._pads[3].value_has_listener(self._pads_n3):
+            self._pads[3].add_value_listener(self._pads_n3, identify_sender=False)
+        if not self._pads[4].value_has_listener(self._pads_n4):
+            self._pads[4].add_value_listener(self._pads_n4, identify_sender=False)
+        if not self._pads[5].value_has_listener(self._pads_n5):
+            self._pads[5].add_value_listener(self._pads_n5, identify_sender=False)
+        if not self._pads[6].value_has_listener(self._pads_n6):
+            self._pads[6].add_value_listener(self._pads_n6, identify_sender=False)
+        if not self._pads[7].value_has_listener(self._pads_n7):
+            self._pads[7].add_value_listener(self._pads_n7, identify_sender=False)
+        
+            # encoders listener
+        if not self._knob6_encoder.value_has_listener(self._encoder_n5):
+            self._knob6_encoder.add_value_listener(self._encoder_n5, identify_sender=False)
+        if not self._knob14_encoder.value_has_listener(self._encoder_n13):
+            self._knob14_encoder.add_value_listener(self._encoder_n13, identify_sender=False)
+        if not self._knob7_encoder.value_has_listener(self._encoder_n6):
+            self._knob7_encoder.add_value_listener(self._encoder_n6, identify_sender=False)
+        if not self._knob15_encoder.value_has_listener(self._encoder_n14):
+            self._knob15_encoder.add_value_listener(self._encoder_n14, identify_sender=False)
+        if not self._pan_encoder.value_has_listener(self._encoder_n7):
+            self._pan_encoder.add_value_listener(self._encoder_n7, identify_sender=False)
+        if not self._volume_encoder.value_has_listener(self._encoder_n15):
+            self._volume_encoder.add_value_listener(self._encoder_n15, identify_sender=False)
+    
+        # _knob0_encoder
+        if not self._knob0_encoder.value_has_listener(self._encoder_n0):
+            self._knob0_encoder.add_value_listener(self._encoder_n0, identify_sender=False)
+        if not self._knob0_button.value_has_listener(self._encoder_n0_button):
+            self._knob0_button.add_value_listener(self._encoder_n0_button, identify_sender=False)
+    
+        if not self._knob8_encoder.value_has_listener(self._encoder_n8):
+            self._knob8_encoder.add_value_listener(self._encoder_n8, identify_sender=False)
+        if not self._knob8_button.value_has_listener(self._encoder_n8_button):
+            self._knob8_button.add_value_listener(self._encoder_n8_button, identify_sender=False)
+    
+        if not self._switchpad_button.value_has_listener(self._switchpad_value_on_press):
+            self._switchpad_button.add_value_listener(self._switchpad_value_on_press, identify_sender=False)
+    
+        if not self._shift_button.value_has_listener(self._shift_value_on_press):
+            self._shift_button.add_value_listener(self._shift_value_on_press, identify_sender=False)
+
     def disconnect(self):
         """clean things up on disconnect"""
         logger.info("MMINILABMK2 remove listeners")
@@ -528,11 +535,12 @@ class mMiniLabMk2(ArturiaControlSurface):
         
         logger.info(" MMINILABMK2 log CLOSE ")
         return None
-    
+
     # * Boton Shift pulsado
     def _shift_value_on_press(self, value):
         self._update_leds()
         logger.info("mMiniLabMk2 = SHIFT BUTTON PRESSED")
+        
         if value[0] > 0:
             self.modo_clip_activo = False
             self.shift_active = True
@@ -550,7 +558,6 @@ class mMiniLabMk2(ArturiaControlSurface):
         self._update_leds()
     
     # * no implementado
-    # TODO: Los Knobs en el modo sesion no deben cambiar aunque estemos en modo clip
     def _switchpad_value_on_press(self, value):
         if value[0] > 0:
             self.altpad_pushed = True
@@ -572,17 +579,6 @@ class mMiniLabMk2(ArturiaControlSurface):
     # * con shift cambia entre devices
     def _encoder_n0(self, value):
         # * shift, device change
-        # logger.info("track_or_device ::::::::::::: " + str(value))
-        # FIXME: Con solo shift activado tambien debe cambiar entre Devices
-        #  no se puede sin activar _alt_encoder_n0
-        
-        # if self.altpad_pushed:
-        #     self._mixer.set_track_select_encoder(None)
-        #     if value > 0:
-        #         logger.info("track_or_device ::::::::::::: ")
-        #         return
-        
-        # if self.shift_active or self.modo_clip_activo:
         if self.modo_clip_activo:
             
             if value > 0:
@@ -591,28 +587,15 @@ class mMiniLabMk2(ArturiaControlSurface):
                     clip = self.song_instance.view.detail_clip
                     if clip:
                         clip.view.show_loop()
+                    # self._mixer.set_track_select_encoder(self._knob0_encoder)
                 
                 elif self.application().view.is_view_visible(u'Detail/DeviceChain'):
-                    self._mixer.set_track_select_encoder(None)
-                    
-                    track = self.song_instance.view.selected_track
-                    if not track.view.selected_device_has_listener(self._device_changed):
-                        track.view.add_selected_device_listener(self._device_changed)
-                    
-                    # * shift, device change when in device view
-                    Actions(self._transport).enc_moveon_topdevice(value)
-        
+                    # self._mixer.set_track_select_encoder(None)
+                    pass
+
         # * normal, track change
         else:
             self._mixer.set_track_select_encoder(self._knob0_encoder)
-            # FIXME: En modo Arranger la vista debe seguir al track
-            # if self.application().view.is_view_visible(u'Arranger'):
-            #     sel_track = self.song_instance.view.selected_track
-            #     tot_tracks = self.song_instance.tracks
-            #     if not sel_track in self.song_instance.visible_tracks:
-            #         sel_index = tot_tracks.index(sel_track)
-            #         self.application().view.zoom_view(sel_index, u'Arranger', True)
-    
     
     # * Boton de knob 1 (0), Cambia  de vista entre clip y device tambien hace zoom al loop del clip,
     # *  con shift pulsado oculta la vista de detalle
@@ -634,23 +617,25 @@ class mMiniLabMk2(ArturiaControlSurface):
                 pad_track = total_v_tracks[track_number]
                 if pad_track.mute:
                     _send_color(self, 112 + pad_number, CYAN)
-
+            
             # * shift, hide / show detail
             if self.shift_active:
                 # * shift, hide / show detail
                 # Actions(self._transport).button_hide_viewdetail()
                 # * Fold / unfold track in session
-                Actions(self._transport).button_track_fold()
+                is_folder = Actions(self._transport).button_track_fold()
+                if not is_folder:
             # * Modo Clip y Normal, change view (device - clip)
-            else:
-                # * Detail
-                if not self.application().view.is_view_visible(u'Detail'):
-                    self.application().view.focus_view("Detail")
-                    self.application().view.zoom_view(1, "Detail", True)
-                # * Detail/Clip, Detail/DeviceChain
-                if not self.application().view.is_view_visible(u'Detail/DeviceChain'):
-                    self.application().view.focus_view("Detail/DeviceChain")
-                
+            # else:
+                    # * Detail
+                    if not self.application().view.is_view_visible(u'Detail'):
+                        self.application().view.focus_view("Detail")
+                        self.application().view.zoom_view(1, "Detail", True)
+                    # * Detail/Clip, Detail/DeviceChain
+                    if not self.application().view.is_view_visible(u'Detail/DeviceChain'):
+                        self.application().view.focus_view("Detail/DeviceChain")
+                    else:
+                        self.application().view.focus_view("Detail/Clip")
         else:
             self.enc0_button = False
             self._session.set_enabled(True)
@@ -696,6 +681,10 @@ class mMiniLabMk2(ArturiaControlSurface):
                 self.modo_clip_activo = True
                 _shift_led(self, True)
                 self._device.set_on_off_button(None)
+                
+                # ! !!!
+                Actions(self._transport).focus_onplaying_clip()
+
             # * Modo Clip
             elif self.modo_clip_activo:
                 # * Detail/Clip, nope
@@ -713,8 +702,10 @@ class mMiniLabMk2(ArturiaControlSurface):
             self._device.set_on_off_button(None)
             self.enc8_button = False
             self._session.set_enabled(True)
+
     
-    # * vol send a / move loop, select device bank
+
+    # * vol send a / set start marker, select device preset
     def _encoder_n5(self, value):
         if self.shift_active or self.modo_clip_activo:
             if TWO_SENDS:
@@ -722,11 +713,11 @@ class mMiniLabMk2(ArturiaControlSurface):
             else:
                 self._mixer.set_selected_track_send_controls(None)
             
-            # * shift, move loop
+            # * shift
             if self.application().view.is_view_visible(u'Detail/Clip'):
                 if value > 0:
-                    # * shift, move loop
-                    Actions(self._transport).enc_move_loop(value)
+                    # * shift, set start marker
+                    Actions(self._transport).enc_set_start_marker(value)
             
             elif self.application().view.is_view_visible(u'Detail/DeviceChain'):
                 self.application().view.focus_view("Detail/DeviceChain")
@@ -742,8 +733,6 @@ class mMiniLabMk2(ArturiaControlSurface):
                 self._mixer.set_selected_track_send_controls(self._send_encoders)
     
     def enc_seldevice_preset(self, value):
-        # type = appo_device.type
-        # logger.info("device type :: " + str(type))
         presets = None
         actual_preset = None
         appo_device = self.song_instance.appointed_device
@@ -751,7 +740,6 @@ class mMiniLabMk2(ArturiaControlSurface):
             chain_selected = appo_device.view.selected_chain
             chain_devices = chain_selected.devices
             if len(chain_devices) > 0:
-                # appo_device.view.is_showing_chain_devices = True
                 for device in chain_devices:
                     if presets is not None:
                         break
@@ -783,7 +771,6 @@ class mMiniLabMk2(ArturiaControlSurface):
                     )
                 )
             else:
-                
                 if actual_preset == total_presets:
                     actual_preset = 0
                 else:
@@ -795,28 +782,28 @@ class mMiniLabMk2(ArturiaControlSurface):
                     )
                 )
     
-    # * send a / loop start
+    # * send a / move loop
     def _encoder_n6(self, value):
-        # * shift, change loop start
+        # * shift,
         if self.shift_active or self.modo_clip_activo:
             self._mixer.set_selected_track_send_controls(None)
             if value > 0:
                 if self.application().view.is_view_visible(u'Detail/Clip'):
-                    # * shift, change loop start
-                    Actions(self._transport).enc_set_loop_start(value)
+                    # * shift, move loop
+                    Actions(self._transport).enc_move_loop(value)
         # * normal, envio send a
         else:
             self._mixer.set_selected_track_send_controls(self._send_encoders)
     
-    # * pan / loop_end
+    # * pan / track pannig , duplicate-divide loop marker
     def _encoder_n7(self, value):
-        # * shift, set loop end
+        # * shift,
         if self.shift_active or self.modo_clip_activo:
             self._mixer.set_selected_track_pan_control(None)
             if value > 0:
                 if self.application().view.is_view_visible(u'Detail/Clip'):
-                    # * shift, set loop end
-                    Actions(self._transport).enc_set_loop_end(value)
+                    # * shift, duplicate-divide loop marker
+                    Actions(self._transport).enc_dupdiv_loop_marker(value)
                 if self.application().view.is_view_visible(u'Detail/DeviceChain'):
                     # * shift, track pannig
                     self._mixer.set_selected_track_pan_control(self._pan_encoder)
@@ -824,9 +811,9 @@ class mMiniLabMk2(ArturiaControlSurface):
         else:
             self._mixer.set_selected_track_pan_control(self._pan_encoder)
     
-    # * vol send b / duplicate-divide loop marker
+    # * vol send b / change indevice
     def _encoder_n13(self, value):
-        # * shift, duplicate-divide loop marker
+        # * shift,
         if self.shift_active or self.modo_clip_activo:
             if TWO_SENDS:
                 self._mixer.set_return_volume_controls(None)
@@ -834,8 +821,15 @@ class mMiniLabMk2(ArturiaControlSurface):
                 self._mixer.set_selected_track_send_controls(None)
             if value > 0:
                 if self.application().view.is_view_visible(u'Detail/Clip'):
-                    # * shift, duplicate-divide loop marker
-                    Actions(self._transport).enc_dupdiv_loop_marker(value)
+                    Actions(self._transport).enc_pitch_fine(value)
+
+                elif self.application().view.is_view_visible(u'Detail/DeviceChain'):
+                    # * shift, change indevice
+                    # * al borrar el listener "self.sub_devices" queda congelado
+                    track = self.song_instance.view.selected_track
+                    if track.view.selected_device_has_listener(self._device_changed):
+                        track.view.remove_selected_device_listener(self._device_changed)
+                    Actions(self._transport).enc_moveinto_devices(value, self.sub_devices)
         
         # * normal, volumen de send b
         else:
@@ -843,58 +837,37 @@ class mMiniLabMk2(ArturiaControlSurface):
                 self._mixer.set_return_volume_controls(self._return_encoders)
             else:
                 self._mixer.set_selected_track_send_controls(self._send_encoders)
-    
-    # * Controla el device que cambia, si tiene sub devices los mete en una lista
-    # * para actuar en el eliminamos el listener en la funcion que queremos utilizar
-    # * la lista
-    def _device_changed(self):
-        track = self.song_instance.view.selected_track
-        device = track.view.selected_device
-        logger.info("_device_changed _listener ::::::::::::: " + str(device))
-        sub_list = []
-        if device.can_have_chains:
-            for ch in device.chains:
-                # if ch.devices:
-                #     list = self.get_device_list(ch.devices)
-                #     sub_list.extend(list)
-                
-                for dev in ch.devices:
-                    logger.info("_device PARAM ::::::::::::: " + str(dev.name))
-                    logger.info("_device PARAM ::::::::::::: " + str(dev.parameters))
-                    sub_list.append(dev)
-        self.sub_devices = sub_list
-    
-    # * send b / ( start_marker / device change )
+
+    # * send b / change device
     def _encoder_n14(self, value):
-        # * shift, set start marker, change device
+        # * shift,
         if self.shift_active or self.modo_clip_activo:
             self._mixer.set_selected_track_send_controls(None)
             if value > 0:
                 if self.application().view.is_view_visible(u'Detail/Clip'):
-                    # * shift, set start marker
-                    Actions(self._transport).enc_set_start_marker(value)
-                
+                    Actions(self._transport).enc_pitch_coarse(value)
+
                 elif self.application().view.is_view_visible(u'Detail/DeviceChain'):
-                    # * al borrar el listener "self.sub_devices" queda congelado
+                    # * shift, device change when in device view
+                    Actions(self._transport).enc_moveon_topdevice(value)
                     track = self.song_instance.view.selected_track
-                    if track.view.selected_device_has_listener(self._device_changed):
-                        track.view.remove_selected_device_listener(self._device_changed)
-                    Actions(self._transport).enc_moveinto_devices(value, self.sub_devices)
-        
-        
+                    if not track.view.selected_device_has_listener(self._device_changed):
+                        track.view.add_selected_device_listener(self._device_changed)
         # * normal, envio send b
         else:
             self._mixer.set_selected_track_send_controls(self._send_encoders)
-    
-    # * vol / ( end_marker / device change )
+
+    # * vol / ( vol / vol )
     def _encoder_n15(self, value):
-        # * shift, set end marker
+        # * shift,
         if self.shift_active or self.modo_clip_activo:
             self._mixer.set_selected_track_volume_control(None)
             if value > 0:
                 if self.application().view.is_view_visible(u'Detail/Clip'):
-                    # * shift, set end marker
-                    Actions(self._transport).enc_set_end_marker(value)
+                    # * shift, track volumen
+                    self._mixer.set_selected_track_volume_control(self._volume_encoder)
+                    
+                    # Actions(self._transport).enc_set_end_marker(value)
                 if self.application().view.is_view_visible(u'Detail/DeviceChain'):
                     # * shift, track volumen
                     self._mixer.set_selected_track_volume_control(self._volume_encoder)
@@ -902,20 +875,35 @@ class mMiniLabMk2(ArturiaControlSurface):
         # * normal, track volumen
         else:
             self._mixer.set_selected_track_volume_control(self._volume_encoder)
+
+        # * Controla el device que cambia, si tiene sub devices los mete en una lista
+        # * para actuar en el eliminamos el listener en la funcion que queremos utilizar
+        # * la lista
+
+    def _device_changed(self):
+        track = self.song_instance.view.selected_track
+        device = track.view.selected_device
+        # logger.info("_device_changed _listener ::::::::::::: " + str(device))
+        sub_list = []
+        if device.can_have_chains:
+            for ch in device.chains:
+                for dev in ch.devices:
+                    sub_list.append(dev)
+        self.sub_devices = sub_list
     
     # ? PADS 1
     def get_session_track(self, pad_id):
         total_v_tracks = self.song_instance.visible_tracks
         offset = self._session.track_offset()
         track_number = offset + pad_id
-        logger.info("_pads_n" + str(pad_id) + " : session track n: " + str(track_number))
+        # logger.info("_pads_n" + str(pad_id) + " : session track n: " + str(track_number))
         relevant_track = total_v_tracks[track_number]
-        logger.info("_pads_n" + str(pad_id) + " : session track name: " + str(relevant_track.name))
+        # logger.info("_pads_n" + str(pad_id) + " : session track name: " + str(relevant_track.name))
         return relevant_track
     
     def _pads_n0(self, value):
         pad_id = 0
-        logger.info("_pads_n" + str(pad_id) + " : value: " + str(value))
+        # logger.info("_pads_n" + str(pad_id) + " : value: " + str(value))
         relevant_track = self.get_session_track(pad_id)
         if value > 0:
             if self.enc8_button and relevant_track.can_be_armed:
@@ -989,19 +977,11 @@ class mMiniLabMk2(ArturiaControlSurface):
     # ? PADS 2
     # * n120 - play button / arm track and overdub
     def _pads2_n8(self, value):
-        # logger.info("::::::::::::: " + str(self.enc8_button))
-        # if self.enc8_button:
-        #     if value > 0:
-        #         track = self.song_instance.view.selected_track
-        #         track.arm = True
-        #         return
-        
         if self.shift_active or self.modo_clip_activo:
             self._transport.set_play_button(None)
             if value > 0:
                 # * shift, arm track and overdub
                 Actions(self._transport).button_armoverdub()
-        
         else:
             self._transport.set_play_button(self._pads2[8])
             if value > 0:
@@ -1024,7 +1004,7 @@ class mMiniLabMk2(ArturiaControlSurface):
                     self.song_instance.stop_playing()
         self._update_leds()
     
-    # TODO: Usar un pad para guasrdar el estado del loop y recuperarlo despues
+    # TODO: Usar un pad para guardar el estado del loop y recuperarlo despues
     # * n122 - overdub / nope
     def _pads2_n10(self, value):
         # * shift,
@@ -1040,65 +1020,80 @@ class mMiniLabMk2(ArturiaControlSurface):
                 Actions(self._transport).button_overdub()
         self._update_leds()
     
-    # * n123 - undo / quantize
+    # * n123 - undo / none
     def _pads2_n11(self, value):
         if self.shift_active or self.modo_clip_activo:
             if value > 0:
-                # * shift, quantize
-                Actions(self._transport).button_quantize_song()
+                pass
         else:
             if value > 0:
                 # * normal, undo
                 self.song_instance.undo()
         self._update_leds()
     
-    # * n124 - nope / scrub
+    # * n124 - alternate_view detail
     def _pads2_n12(self, value):
-        # * shift, scrub
+        # * shift, alternate_view detail
         if self.shift_active or self.modo_clip_activo:
-            if self.application().view.is_view_visible(u'Detail/Clip'):
-                Actions(self._transport).button_scrub(value)
-        
-        # * normal,
+            if value > 0:
+                Actions(self._transport).button_alternate_viewdetail()
+                Actions(self._transport).focus_onplaying_clip()
+        # * normal, alternate_view detail
         else:
-            self._update_leds()
+            if value > 0:
+                Actions(self._transport).button_alternate_viewdetail()
         self._update_leds()
     
-    # *n125 - nope /  play stop clip
+    # *n125 - nope /  quantize
     def _pads2_n13(self, value):
         
         if self.shift_active or self.modo_clip_activo:
             self._transport.set_stop_button(None)
             if self.application().view.is_view_visible(u'Detail/Clip'):
-                # * shift, play stop clip
-                Actions(self._transport).button_playstop_clip(value)
+                if value > 0:
+                    # * shift, quantize
+                    Actions(self._transport).button_quantize_song()
         # * normal,
         else:
             self._update_leds()
         self._update_leds()
     
-    # *n126 - new scene / consolidate loop
+    # *n126 - new scene / scrub
     def _pads2_n14(self, value):
         if self.shift_active or self.modo_clip_activo:
             if self.application().view.is_view_visible(u'Detail/Clip'):
-                # * shift, consolidate loop
-                Actions(self._transport).button_aproximate_loop(value)
+                # * shift, scrub
+                clip = self.song_instance.view.detail_clip
+                if clip:
+                    if value > 0:
+                        if clip in self.scrubbing_clips:
+                            clip.stop_scrub()
+                            self.scrubbing_clips.remove(clip)
+                        else:
+                            if clip.is_playing:
+                                clip.scrub(clip.playing_position)
+                            else:
+                                clip.scrub(clip.start_marker)
+                            self.scrubbing_clips.append(clip)
         else:
             if value > 0:
                 # * normal, new scene from play
                 Actions(self._transport).button_newscene_fplay()
         self._update_leds()
     
-    # * n127 - play stop scene / set loop
+    # * n127 - play stop scene / play stop clip
     def _pads2_n15(self, value):
         
         if self.shift_active or self.modo_clip_activo:
             if self.application().view.is_view_visible(u'Detail/Clip'):
-                # * shift, set loop on off
-                Actions(self._transport).button_seton_loop(value)
+                # * shift, play stop clip
+                Actions(self._transport).button_playstop_clip(value)
         # * normal, play stop scene
         else:
-            Actions(self._transport).button_play_scene(value)
+            if self.enc8_button:
+                Actions(self._transport).button_playstop_scene(value)
+            else:
+                Actions(self._transport).button_play_scene(value)
         self._update_leds()
     
     def clip_properties(self, clip):

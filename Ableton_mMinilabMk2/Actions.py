@@ -4,7 +4,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 import Live
-# from _Framework.ControlSurface import ControlSurface as CS
 from .Constants import *
 
 
@@ -12,14 +11,13 @@ class Actions:
     def __init__(self, transport):
         self._transport = transport
         self.song_instance = self._transport.song()
-        # self.show_message = CS.show_message()
-        # clip = self.song_instance.view.detail_clip
     
     def application(self):
         return Live.Application.get_application()
     
     # * device change
     def enc_moveon_topdevice(self, value):
+        
         track = self.song_instance.view.selected_track
         if track.devices:
             devices_tot = []
@@ -41,15 +39,16 @@ class Actions:
                         prev_device = devices_tot[dev_index]
                     self.song_instance.view.select_device(prev_device, True)
                     self.device_collapsed(device_sel, prev_device, IN_DEVICE_VIEW_COLLAPSED)
+                    
                 
                 else:
                     if dev_index + 1 < len(devices_tot):
                         next_device = devices_tot[dev_index + 1]
                         self.song_instance.view.select_device(next_device, True)
                         self.device_collapsed(device_sel, next_device, IN_DEVICE_VIEW_COLLAPSED)
-    
+                        
+
     def enc_moveinto_devices(self, value, sub_devices):
-        # TODO: en la interfaz tiene que aparecer el nombre del device seleccionado
         # * no actua si solo tiene un device
         if len(sub_devices) > 1:
             device_list = self.get_device_list(sub_devices)
@@ -60,30 +59,33 @@ class Actions:
                 dev_index = device_list.index(device_sel)
             else:
                 dev_index = 0
-            if value > 20:
+            if value > 64:
                 if not dev_index == 0:
                     prev_device = device_list[dev_index - 1]
                 else:
                     prev_device = device_list[dev_index]
                 self.song_instance.view.select_device(prev_device, True)
                 self.song_instance.appointed_device = prev_device
-                self.device_collapsed(device_sel, prev_device, True, "instrument")
+                # self.device_collapsed(device_sel, prev_device, True, "instrument")
+                self.device_collapsed(device_sel, prev_device, True)
             
             else:
                 if dev_index + 1 < len(device_list):
                     next_device = device_list[dev_index + 1]
                     self.song_instance.view.select_device(next_device, True)
                     self.song_instance.appointed_device = next_device
-                    self.device_collapsed(device_sel, next_device, True, "instrument")
-            nav = Live.Application.Application.View.NavDirection
-            self.application().view.zoom_view(nav.left, u'Detail/DeviceChain', True)
+                    # self.device_collapsed(device_sel, next_device, True, "instrument")
+                    self.device_collapsed(device_sel, next_device, True)
     
     def device_collapsed(self, device_sel, prev_or_next_device, device_collapsed=False, device_excluded=None):
         if device_sel is not None:
-            if str(device_sel.type) == device_excluded:
+            logger.info(" device to collapse type: " + str(device_sel.type) + "  name : " + str(device_sel.name))
+            device_sel.view.is_collapsed = device_collapsed
+            if device_sel.can_have_chains:
                 device_sel.view.is_collapsed = False
-            else:
-                device_sel.view.is_collapsed = device_collapsed
+            if device_excluded is not None:
+                if str(device_sel.type) == device_excluded:
+                    device_sel.view.is_collapsed = False
         
         if prev_or_next_device is not None:
             prev_or_next_device.view.is_collapsed = False
@@ -172,25 +174,67 @@ class Actions:
             else:
                 clip.end_marker = e_marker + e_advance
             clip.view.show_loop()
+
+    def get_clip_inbeats(self, clip):
+        # Clip in beats/seconds (unit depends on warping)
+        if clip.is_audio_clip and not clip.warping:
+            return None, None, None
+        clipbeats_length = clip.length
+        beats_loopend = clip.loop_end
+        beats_loopstart = clip.loop_start
+        return clipbeats_length, beats_loopend, beats_loopstart
     
     # * duplicate-divide loop marker
     def enc_dupdiv_loop_marker(self, value):
         clip = self.song_instance.view.detail_clip
         if clip:
-            clipbeats_length, beats_loopend, beats_loopstart = self.get_clip_inbeats(clip)
-            if clipbeats_length != None:
-                if value > 64:
-                    loop_end = beats_loopend / 2
-                else:
-                    loop_end = beats_loopend * 2
-                if loop_end > beats_loopstart:
-                    if loop_end < LOOP_MIN_BEATS:
-                        loop_end = LOOP_MIN_BEATS
-                    if loop_end > LOOP_MAX_BEATS:
-                        loop_end = LOOP_MAX_BEATS
-                    clip.loop_end = loop_end
-                clip.view.show_loop()
-                logger.info("loop length: " + str(beats_loopend - beats_loopstart) + " - loop end: " + str(loop_end))
+            if clip.is_audio_clip and not clip.warping:
+                return
+            loop_end = clip.loop_end
+            loop_start = clip.loop_start
+            loop_length = loop_end - loop_start
+            if value > 64:
+                loop_length = loop_length / 2
+            else:
+                loop_length = loop_length * 2
+
+            if loop_length >= LOOP_MAX_BEATS:
+                loop_length = LOOP_MAX_BEATS
+            if loop_length <= LOOP_MIN_BEATS:
+                loop_length = LOOP_MIN_BEATS
+            # clip_length = clip.length
+            # logger.info("3. loop length: " + str(loop_length) + " - clip length: " + str(clip_length))
+            # logger.info("4. loop end: " + str(loop_end) + " - loop start: " + str(loop_start))
+
+            clip.loop_end = clip.loop_start + loop_length
+            
+            clip.view.show_loop()
+
+    def enc_pitch_coarse(self, value):
+        clip = self.song_instance.view.detail_clip
+        if not clip.is_audio_clip:
+            return
+        pitch = clip.pitch_coarse
+        if value > 64:
+            pitch = pitch - 1
+        else:
+            pitch = pitch + 1
+        if pitch > -49:
+            if pitch < 49:
+                clip.pitch_coarse = pitch
+
+    def enc_pitch_fine(self, value):
+        clip = self.song_instance.view.detail_clip
+        if not clip.is_audio_clip:
+            return
+        pitch = clip.pitch_fine
+        if value > 64:
+            pitch = pitch - 1
+        else:
+            pitch = pitch + 1
+        if pitch > -500:
+            if pitch < 500:
+                clip.pitch_fine = pitch
     
     def button_alternate_viewdetail(self):
         if not self.application().view.is_view_visible(u'Detail'):
@@ -223,6 +267,7 @@ class Actions:
                 track.fold_state = False
             else:
                 track.fold_state = True
+            return track.is_foldable
     
     def button_focus_cliploop(self):
         clip = self.song_instance.view.detail_clip
@@ -230,6 +275,20 @@ class Actions:
             self.application().view.focus_view("Detail/Clip")
             logger.info("mMiniLabMk2 = Detail/Clip: " + str(clip.name))
             clip.view.show_loop()
+
+    def focus_onplaying_clip(self):
+        track = self.song_instance.view.selected_track
+        slot_idx = track.playing_slot_index
+        if slot_idx != -1:
+            logger.info(" : slot : " + str(slot_idx))
+            slots = list(track.clip_slots)
+            playing_slot = slots[slot_idx]
+            if playing_slot.has_clip:
+                clip = playing_slot.clip
+                # highlighted_clip_slot
+                self.song_instance.view.detail_clip = clip
+                if SESSION_FOLLOWS_CLIP:
+                    self.song_instance.view.highlighted_clip_slot = playing_slot
     
     def button_activate_device(self):
         track = self.song_instance.view.selected_track
@@ -314,7 +373,7 @@ class Actions:
         if clip:
             if value > 0:
                 if clip.is_playing:
-                    clip.stop_scrub()
+                    clip.stop()
                 else:
                     clipslot = self.song_instance.view.highlighted_clip_slot
                     clipslot.fire(force_legato=True)
@@ -322,21 +381,26 @@ class Actions:
     def button_aproximate_loop(self, value):
         clip = self.song_instance.view.detail_clip
         if clip:  # and clip.looping:
-            clipbeats_length, beats_loopend, beats_loopstart = self.get_clip_inbeats(clip)
-            if clipbeats_length != None:
-                if value > 0:
-                    loop_length = beats_loopend - beats_loopstart
-                    if loop_length < LOOP_MIN_BEATS:
-                        loop_length = LOOP_MIN_BEATS
-                    if loop_length > LOOP_MAX_BEATS:
-                        loop_length = LOOP_MAX_BEATS
-                    if loop_length <= LOOP_MAX_BEATS and loop_length >= LOOP_MIN_BEATS:
-                        if loop_length < 1:
-                            loop_length = round(loop_length, 2)
-                        else:
-                            loop_length = round(loop_length)
-                    clip.loop_end = clip.loop_start + loop_length
-                    clip.view.show_loop()
+            
+            # clipbeats_length, beats_loopend, beats_loopstart = self.get_clip_inbeats(clip)
+            # if clipbeats_length != None:
+            if clip.is_audio_clip and not clip.warping:
+                return
+            if value > 0:
+                loop_end = clip.loop_end
+                loop_start = clip.loop_start
+                loop_length = loop_end - loop_start
+                if loop_length < LOOP_MIN_BEATS:
+                    loop_length = LOOP_MIN_BEATS
+                if loop_length > LOOP_MAX_BEATS:
+                    loop_length = LOOP_MAX_BEATS
+                if LOOP_MAX_BEATS >= loop_length >= LOOP_MIN_BEATS:
+                    if loop_length < 1:
+                        loop_length = round(loop_length, 2)
+                    else:
+                        loop_length = round(loop_length)
+                clip.loop_end = clip.loop_start + loop_length
+                clip.view.show_loop()
     
     def button_consolidate_loop(self, value):
         clip = self.song_instance.view.detail_clip
@@ -364,7 +428,9 @@ class Actions:
                     clip.looping = False
                 else:
                     clip.looping = True
-    
+
+    # * ls nueva escena seleccionada reemplaza a la anterior,
+    # * si es la misma escena los clip se alternan
     def button_play_scene(self, value):
         scene_selected = self.song_instance.view.selected_scene
         if value > 0:
@@ -373,14 +439,19 @@ class Actions:
             else:
                 scene_selected.fire_as_selected(force_legato=True)
     
-    def get_clip_inbeats(self, clip):
-        # Clip in beats/seconds (unit depends on warping)
-        if clip.is_audio_clip and not clip.warping:
-            return None, None, None
-        clipbeats_length = clip.length
-        beats_loopend = clip.loop_end
-        beats_loopstart = clip.loop_start
-        return clipbeats_length, beats_loopend, beats_loopstart
+    # * ls nueva escena seleccionada se suma y reemplaza a los clip de la anterior escena
+    def button_playstop_scene(self, value):
+        scene_selected = self.song_instance.view.selected_scene
+        if value > 0:
+            if scene_selected.is_empty:
+                self.song_instance.stop_all_clips(Quantized=True)
+            else:
+                for clipslt in scene_selected.clip_slots:
+                    if clipslt.clip:
+                        if not clipslt.is_playing:
+                            clipslt.fire(force_legato=True)
+    
+    
     
     def enc_set_gridquant_value(self, value):
         clip = self.song_instance.view.detail_clip

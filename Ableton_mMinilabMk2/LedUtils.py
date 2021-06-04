@@ -13,9 +13,7 @@ DEFAULT_BLINK = 1
 
 
 def blink_conditioned(self, condition=lambda: False, pad_number=120, colors=[RED, BLACK], timeout=3):
-    
     c = cycle(colors)
-    
     def callback():
         if condition():
             _send_color(self, pad_number, next(c))
@@ -74,7 +72,8 @@ def _leds_NormalMode(self, song_instance):
     
     # undo
     _send_color(self, 123, CYAN)
-    _send_color(self, 124, BLACK)
+    # * alternate detail view
+    _send_color(self, 124, WHITE)
     _send_color(self, 125, BLACK)
     # self._blink(True, 125, timeout=5, colors=[0, 20])
     # new scene
@@ -102,25 +101,25 @@ def _leds_ClipMode(self, song_instance):
     _send_color(self, 121, CYAN)
     # * nope
     _send_color(self, 122, BLACK)
+    _send_color(self, 123, BLACK)
+    # * alternate detail view
+    _send_color(self, 124, WHITE)
     # * quantize
-    _send_color(self, 123, BLUE)
+    _send_color(self, 125, BLUE)
     clip = song_instance.view.detail_clip
     if not clip:
-        _send_color(self, 120, BLACK)
-        _send_color(self, 124, BLACK)
         _send_color(self, 125, BLACK)
         _send_color(self, 126, BLACK)
         _send_color(self, 127, BLACK)
     
     else:
-        _send_color(self, 126, WHITE)
-        # * scrub
-        _send_color(self, 124, YELLOW)
-        # * play clip
-        _send_color(self, 125, YELLOW)
-        if clip.looping:
-            # * clip is loop
+        if not clip.is_playing:
+            # * scrub
+            _send_color(self, 126, YELLOW)
+            # * play clip
             _send_color(self, 127, YELLOW)
-        
         else:
-            _send_color(self, 127, BLACK)
+            # * scrub
+            _send_color(self, 126, GREEN)
+            # * play clip
+            _send_color(self, 127, GREEN)

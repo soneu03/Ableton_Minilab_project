@@ -46,14 +46,19 @@ El funcionamiento en líneas generales hace uso de las dos líneas de pads, así
 Como me interesaba el funcionamiento de modo session que viene por defecto en el script original de 
 Arturia, lo decidí mantener, pero solo en una línea de pads (considero dos líneas, la 1, que 
 corresponderían a los pads del 1 al 8, y la 2, que serían los pads del 9 al 16 cuando la tecla de cambio de pads está activada).
-Pero no me interesaba la línea 2 (pads 9-16) en el funcionamiento original. Ahora, los pads 9-16 quedan
-así:
+Pero no me interesaba la línea 2 (pads 9-16) en el funcionamiento original.
+
+- _PADS_1 = 1, 2, 3, 4, 5, 6, 7, 8_
+- _PADS_2 = 9, 10, 11, 12, 13, 14, 15, 16_
+
+Ahora, los pads 9-16 quedan así:
 
     Pad_9 = Global Play;
     Pad_10: Global Stop; 
     Pad_11 = Overdub; 
     Pad_12 = Undo; 
-    Pad_13 y Pad_14 = Sin asignación
+    Pad_13 = Cambiar la vista de detalle entre Clip y Devices
+    Pad_14 = Sin asignación
     Pad_15 = Nueva escena a partir de lo reproducido, si no hay nada reproduciendo crea una escena en blanco;
     Pad_16 = Play / Stop escena
 
@@ -64,15 +69,36 @@ _(gracias @LilSmeag >
 #### Knobs 1 al 16
 
 ###### Knob 1:
-En modo de inicio o normal, cuando de carga el banco 8, permite desplazarse
-entre pistas, si lo pulsamos cambia la vista de detalle, si lo pulsamos conla tecla _shift_ pulsada
-.
+Permite desplazarse entre pistas, si lo mantenemos pulsado podemos ver (y activar / desactivar) las pistas que
+están muteadas (_solo PADS_1_). Si la pista es un grupo podemos abrirlo y cerrarlo pulsando _shift_ y presionando.
 
-El knob 1 si se pulsa, cambia de vista entre Session y Arranger
-si se pulsa junto con SHIFT, cambia la vista de los Device de ese Track
-devices con los que nos moveremos con el knob 8 (si pulsamos SHIFT)
-El knob 9 pulsado arma el Track seleccionado, (con SHIFT no implementado)
+###### Knob 9:
+Permite desplazarse entre sesiones (verticalmente). Si lo mantenemos pulsado podemos ver y activar / desactivar
+ las pistas que están armadas y armarlas (_solo PADS_1_).
 
+###### Knobs 2, 3, 4, 5 y 10, 11, 12 y 13:
+Siempre controlan los parámetros de los devices, recomiendo hacer grupos con los devices a usar, ya sean plugins o
+instrumentos, así será más ágil la modificación de los parámetros. Interesante la página 
+[“The Blue Hand” for Instant Mapping in Ableton Live](https://performodule.com/2015/08/09/the-blue-hand-for-instant-mapping-in-ableton-live/).
+
+###### Knobs 6, 7, 14 y 8:
+OPCION 1:
+Volumen de envío A
+
+###### Knob 7:
+Volumen de retorno A. Se puede cambiar en las opciones como Volumen de envío B
+
+###### Knob 14:
+Volumen de envío B
+
+###### Knob 15:
+Volumen de retorno B
+
+###### Knob 8:
+Paneo de pista
+
+###### Knob 16:
+Volumen de pista
 
 
 ```general view                                                plugin preset

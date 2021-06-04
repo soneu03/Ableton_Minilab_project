@@ -1,6 +1,6 @@
 # Embedded file name: /Users/versonator/Jenkins/live/output/Live/mac_64_static/Release/python-bundle/MIDI Remote Scripts/MiniLab_mkII/SessionComponent.py
 from __future__ import absolute_import, print_function, unicode_literals
-
+import time
 from itertools import product
 
 from ableton.v2.base import liveobj_valid
@@ -40,13 +40,15 @@ class ClipSlotComponent(ClipSlotComponentBase):
                 slot_or_clip = self._clip_slot.clip if self.has_clip() else self._clip_slot
                 # value_to_send = self._led_feedback_value(track, slot_or_clip)
                 value_to_send = self.x_led_feedback_value(track, self._clip_slot)
-
+                    
             self._led.send_value((value_to_send,))
 
+    
     def x_led_feedback_value(self, track, clip_slot):
+        
         muted = False
         if track.mute:
-            muted = True
+             muted = True
         if clip_slot.controls_other_clips:
             if clip_slot.is_playing:
                 if muted:
@@ -69,22 +71,23 @@ class ClipSlotComponent(ClipSlotComponentBase):
                     if clip_slot.is_recording:
                         return TRACK_MUTED_RECORDING_VALUE
                     return TRACK_MUTED_STARTED_VALUE
-                if clip_slot.is_recording:
-                    return RECORDING_VALUE
+                # if clip_slot.is_recording:
+                #     return RECORDING_VALUE
                 return STARTED_VALUE
             else:
                 if muted:
-                    if self._track_is_armed(track):
-                        return TRACK_ARMED_MUTED_VALUE
+                    # if self._track_is_armed(track):
+                    #     return TRACK_ARMED_MUTED_VALUE
                     return TRACK_MUTED_VALUE
-                if self._track_is_armed(track):
-                    return TRACK_ARMED_VALUE
+                # if self._track_is_armed(track):
+                #     return TRACK_ARMED_VALUE
                 return STOPPED_VALUE
         else:
-            if self._track_is_armed(track):
-                if muted:
-                    return TRACK_ARMED_MUTED_VALUE
-                return TRACK_ARMED_VALUE
+            
+            if muted:
+                if self._track_is_armed(track):
+                    return TRACK_ARMED_VALUE
+                return TRACK_ARMED_MUTED_VALUE
             if muted:
                 return TRACK_MUTED_VALUE
             return SELECTED_VALUE
@@ -93,7 +96,6 @@ class ClipSlotComponent(ClipSlotComponentBase):
     def _led_feedback_value(self, track, slot_or_clip):
         try:
             if slot_or_clip.controls_other_clips:
-                # TODO: Desarrollar esto? Si el track es foldable y tiene clip(s) debe mostralo
                 if slot_or_clip.is_playing:
                     return STARTED_VALUE
                 return STOPPED_VALUE
@@ -172,7 +174,8 @@ class SessionComponent(SessionComponentBase):
             track_index = tracks.index(selected_track)
             new_track_offset = track_index - track_index % self.width()
             self.set_offsets(new_track_offset, self.scene_offset())
-    
+
+
     def set_clip_slot_leds(self, leds):
         assert not leds or leds.width() == self._num_tracks and leds.height() == 1
         # assert not leds or leds.width() == self._num_tracks
@@ -187,3 +190,4 @@ class SessionComponent(SessionComponentBase):
                 scene = self.scene(y)
                 slot = scene.clip_slot(x)
                 slot.set_led(None)
+
