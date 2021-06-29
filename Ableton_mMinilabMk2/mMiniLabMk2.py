@@ -42,21 +42,20 @@ Recomendable poner el modo de lanzamiento de clips por defecto en Toggle,
 en Preferencias > Lanzamiento > Modo Lanzar por defecto, asi se consigue que
 los clips en modo sesion se puedan parar'''
 
-# ?   + general view                                                plugin preset
-# ?   h.scroll        |----------  device controls ---------|      loop position  loop_start    loop_end
+# ?                                                                plugin preset   move loop      pan
+# ?   h.scroll        |----------  device controls ---------|  loop start/attack   release    dup-div loop
 #     ((+))        (( ))        (( ))        (( ))        (( ))        (( ))        (( ))        (( ))
 #     [ 1 ]        [ 2 ]        [ 3 ]        [ 4 ]        [ 5 ]        [ 6 ]        [ 7 ]        [ 8 ]
 #       0            1            2            3            4            5            6            7
-# !   h.scroll       |----------  device controls ---------|         send a     vol send a         pan
-# *  + detail view
+# !   h.scroll       |----------  device controls ---------|         send A   send B/vol send B    pan
+# *  + mute track
 #                                                                                     |---track----|
 # *  + arm track
-# !   v.scroll      |----------  device controls ----------|         send b     vol send b       volumen
+# !   v.scroll      |----------  device controls ----------|      send B/send C  vol send B/send D   volumen
 #     ((+))        (( ))        (( ))        (( ))        (( ))        (( ))        (( ))        (( ))
 #     [ 9 ]       [ 10 ]       [ 11 ]       [ 12 ]       [ 13 ]       [ 14 ]       [ 15 ]       [ 16 ]
 #       8           9            10           11           12           13           14           15
-# ?   v.scroll      |----------  device controls ---------|         view grid    start_marker   end_marker
-# ? + general quantization
+# ?   v.scroll      |----------  device controls ---------|     select device  select into device   volumen
 # ? + [Clip Mode]
 
 # ? Clip Mode
@@ -68,9 +67,7 @@ los clips en modo sesion se puedan parar'''
 # !  global play   g. stop      g. overdub       undo                                   new scene     play scene
 #    [  9  ]       [  10 ]       [  11 ]       [  12 ]       [  13 ]       [  14 ]       [  15 ]       [  16 ]
 #       8             9             10            11            12            13            14            15
-# ?    loop        quantize   arm & overdub      undo   consolidate loop                  scrub     play / stop scrub
-
-# ?  arm & overdub    undo                      g. quant     scrub      play/stop scrub   cons loop    set loop
+# ?  arm & overdub    undo                                 change view     g. quant       scrub      play/stop
 
 ANALOG_LAB_MEMORY_SLOT_ID = 1
 LIVE_MEMORY_SLOT_ID = 8
@@ -115,7 +112,8 @@ class mMiniLabMk2(ArturiaControlSurface):
             self.modo_clip_activo = False
             self.enc0_button = False
             self.enc8_button = False
-            self.sub_devices = []
+            self.__selecteddevice = None
+            self.__sub_devices = []
             self.scrubbing_clips = []
             self.show_message("mMiniLabMk2 cargando...")
             logger.info("soneu remote script loaded")
@@ -125,6 +123,9 @@ class mMiniLabMk2(ArturiaControlSurface):
             self._create_session()
             self._create_mixer()
             self._create_transport()
+            self.Actions = Actions(self._transport)
+            self.__seldevice_preset_cnt = 1
+
             _off_leds(self)
             self.show_message("mMiniLabMk2 Listo...!")
     
@@ -621,9 +622,9 @@ class mMiniLabMk2(ArturiaControlSurface):
             # * shift, hide / show detail
             if self.shift_active:
                 # * shift, hide / show detail
-                # Actions(self._transport).button_hide_viewdetail()
+                # self.Actions.button_hide_viewdetail()
                 # * Fold / unfold track in session
-                is_folder = Actions(self._transport).button_track_fold()
+                is_folder = self.Actions.button_track_fold()
                 if not is_folder:
             # * Modo Clip y Normal, change view (device - clip)
             # else:
@@ -683,7 +684,7 @@ class mMiniLabMk2(ArturiaControlSurface):
                 self._device.set_on_off_button(None)
                 
                 # ! !!!
-                Actions(self._transport).focus_onplaying_clip()
+                self.Actions.focus_onplaying_clip()
 
             # * Modo Clip
             elif self.modo_clip_activo:
@@ -691,13 +692,12 @@ class mMiniLabMk2(ArturiaControlSurface):
                 if self.application().view.is_view_visible(u'Detail/Clip'):
                     self._device.set_on_off_button(None)
                     # * Focus on clip loop
-                    Actions(self._transport).button_focus_cliploop()
+                    self.Actions.button_focus_cliploop()
                 
                 elif self.application().view.is_view_visible(u'Detail/DeviceChain'):
-                    # if not self.shift_active:
                     self._device.set_on_off_button(self._knob8_button)
                     # * Detail/DeviceChain, activate device
-                    Actions(self._transport).button_activate_device()
+                    self.Actions.button_activate_device()
         else:
             self._device.set_on_off_button(None)
             self.enc8_button = False
@@ -705,7 +705,7 @@ class mMiniLabMk2(ArturiaControlSurface):
 
     
 
-    # * vol send a / set start marker, select device preset
+    # * vol send a / set start marker, select device preset/ simpler
     def _encoder_n5(self, value):
         if self.shift_active or self.modo_clip_activo:
             if TWO_SENDS:
@@ -717,70 +717,31 @@ class mMiniLabMk2(ArturiaControlSurface):
             if self.application().view.is_view_visible(u'Detail/Clip'):
                 if value > 0:
                     # * shift, set start marker
-                    Actions(self._transport).enc_set_start_marker(value)
+                    self.Actions.enc_set_start_marker(value)
             
             elif self.application().view.is_view_visible(u'Detail/DeviceChain'):
                 self.application().view.focus_view("Detail/DeviceChain")
                 if value > 0:
-                    # * shift, select device preset
-                    self.enc_seldevice_preset(value)
-        
+                    
+                    # * shift,
+                    dev = self.song_instance.appointed_device
+                    if dev:
+                        if str(dev.class_name) != "OriginalSimpler":
+                            # * shift, select device preset
+                            mensage = self.Actions._enc_seldevice_preset(value)
+                            try:
+                                self.show_message(mensage)
+                            except AssertionError:
+                                pass
+                        else:
+                            self.Actions._enc_simpler_fadein(dev, value)
+
         # * normal, volumen de send a
         else:
             if TWO_SENDS:
                 self._mixer.set_return_volume_controls(self._return_encoders)
             else:
                 self._mixer.set_selected_track_send_controls(self._send_encoders)
-    
-    def enc_seldevice_preset(self, value):
-        presets = None
-        actual_preset = None
-        appo_device = self.song_instance.appointed_device
-        if appo_device.can_have_chains:
-            chain_selected = appo_device.view.selected_chain
-            chain_devices = chain_selected.devices
-            if len(chain_devices) > 0:
-                for device in chain_devices:
-                    if presets is not None:
-                        break
-                    try:
-                        if device.presets:
-                            presets = device.presets
-                            actual_preset = device.selected_preset_index
-                            appo_device = device
-                    except:
-                        pass
-        else:
-            try:
-                if appo_device.presets:
-                    presets = appo_device.presets
-                    actual_preset = appo_device.selected_preset_index
-            except:
-                pass
-        if presets is not None:
-            total_presets = len(presets) - 1
-            if value > 64:
-                if actual_preset == 0:
-                    actual_preset = total_presets
-                else:
-                    actual_preset = actual_preset - 1
-                appo_device.selected_preset_index = actual_preset
-                self.show_message(
-                    str(appo_device.name) + " < " + str(actual_preset) + " - " + str(
-                        presets[actual_preset]
-                    )
-                )
-            else:
-                if actual_preset == total_presets:
-                    actual_preset = 0
-                else:
-                    actual_preset = actual_preset + 1
-                appo_device.selected_preset_index = actual_preset
-                self.show_message(
-                    str(appo_device.name) + " > " + str(actual_preset) + " - " + str(
-                        presets[actual_preset]
-                    )
-                )
     
     # * send a / move loop
     def _encoder_n6(self, value):
@@ -790,11 +751,17 @@ class mMiniLabMk2(ArturiaControlSurface):
             if value > 0:
                 if self.application().view.is_view_visible(u'Detail/Clip'):
                     # * shift, move loop
-                    Actions(self._transport).enc_move_loop(value)
+                    self.Actions.enc_move_loop(value)
+                if self.application().view.is_view_visible(u'Detail/DeviceChain'):
+                    # * shift, simpler fade out/release
+                    dev = self.song_instance.appointed_device
+                    if dev:
+                        if str(dev.class_name) == "OriginalSimpler":
+                            self.Actions._enc_simpler_fadeout(dev, value)
         # * normal, envio send a
         else:
             self._mixer.set_selected_track_send_controls(self._send_encoders)
-    
+
     # * pan / track pannig , duplicate-divide loop marker
     def _encoder_n7(self, value):
         # * shift,
@@ -803,7 +770,7 @@ class mMiniLabMk2(ArturiaControlSurface):
             if value > 0:
                 if self.application().view.is_view_visible(u'Detail/Clip'):
                     # * shift, duplicate-divide loop marker
-                    Actions(self._transport).enc_dupdiv_loop_marker(value)
+                    self.Actions.enc_dupdiv_loop_marker(value)
                 if self.application().view.is_view_visible(u'Detail/DeviceChain'):
                     # * shift, track pannig
                     self._mixer.set_selected_track_pan_control(self._pan_encoder)
@@ -821,7 +788,7 @@ class mMiniLabMk2(ArturiaControlSurface):
                 self._mixer.set_selected_track_send_controls(None)
             if value > 0:
                 if self.application().view.is_view_visible(u'Detail/Clip'):
-                    Actions(self._transport).enc_pitch_fine(value)
+                    self.Actions.enc_pitch_fine(value)
 
                 elif self.application().view.is_view_visible(u'Detail/DeviceChain'):
                     # * shift, change indevice
@@ -829,7 +796,7 @@ class mMiniLabMk2(ArturiaControlSurface):
                     track = self.song_instance.view.selected_track
                     if track.view.selected_device_has_listener(self._device_changed):
                         track.view.remove_selected_device_listener(self._device_changed)
-                    Actions(self._transport).enc_moveinto_devices(value, self.sub_devices)
+                    self.Actions.enc_moveinto_devices(value, self.__selecteddevice, self.__sub_devices)
         
         # * normal, volumen de send b
         else:
@@ -845,11 +812,11 @@ class mMiniLabMk2(ArturiaControlSurface):
             self._mixer.set_selected_track_send_controls(None)
             if value > 0:
                 if self.application().view.is_view_visible(u'Detail/Clip'):
-                    Actions(self._transport).enc_pitch_coarse(value)
+                    self.Actions.enc_pitch_coarse(value)
 
                 elif self.application().view.is_view_visible(u'Detail/DeviceChain'):
                     # * shift, device change when in device view
-                    Actions(self._transport).enc_moveon_topdevice(value)
+                    self.Actions.enc_moveon_topdevice(value)
                     track = self.song_instance.view.selected_track
                     if not track.view.selected_device_has_listener(self._device_changed):
                         track.view.add_selected_device_listener(self._device_changed)
@@ -867,7 +834,7 @@ class mMiniLabMk2(ArturiaControlSurface):
                     # * shift, track volumen
                     self._mixer.set_selected_track_volume_control(self._volume_encoder)
                     
-                    # Actions(self._transport).enc_set_end_marker(value)
+                    # self.Actions.enc_set_end_marker(value)
                 if self.application().view.is_view_visible(u'Detail/DeviceChain'):
                     # * shift, track volumen
                     self._mixer.set_selected_track_volume_control(self._volume_encoder)
@@ -883,13 +850,14 @@ class mMiniLabMk2(ArturiaControlSurface):
     def _device_changed(self):
         track = self.song_instance.view.selected_track
         device = track.view.selected_device
-        # logger.info("_device_changed _listener ::::::::::::: " + str(device))
+        self.show_message("Dispositivo: " + str(device.name))
         sub_list = []
         if device.can_have_chains:
             for ch in device.chains:
                 for dev in ch.devices:
                     sub_list.append(dev)
-        self.sub_devices = sub_list
+        self.__sub_devices = sub_list
+        self.__selecteddevice = device
     
     # ? PADS 1
     def get_session_track(self, pad_id):
@@ -981,12 +949,12 @@ class mMiniLabMk2(ArturiaControlSurface):
             self._transport.set_play_button(None)
             if value > 0:
                 # * shift, arm track and overdub
-                Actions(self._transport).button_armoverdub()
+                self.Actions.button_armoverdub()
         else:
             self._transport.set_play_button(self._pads2[8])
             if value > 0:
                 # * normal, play pause button
-                Actions(self._transport).button_playpause()
+                self.Actions.button_playpause()
         self._update_leds()
     
     # * n121 - stop / undo
@@ -1017,7 +985,7 @@ class mMiniLabMk2(ArturiaControlSurface):
             self._transport.set_overdub_button(self._pads2[10])
             if value > 0:
                 # * normal, overdub
-                Actions(self._transport).button_overdub()
+                self.Actions.button_overdub()
         self._update_leds()
     
     # * n123 - undo / none
@@ -1036,12 +1004,12 @@ class mMiniLabMk2(ArturiaControlSurface):
         # * shift, alternate_view detail
         if self.shift_active or self.modo_clip_activo:
             if value > 0:
-                Actions(self._transport).button_alternate_viewdetail()
-                Actions(self._transport).focus_onplaying_clip()
+                self.Actions.button_alternate_viewdetail()
+                self.Actions.focus_onplaying_clip()
         # * normal, alternate_view detail
         else:
             if value > 0:
-                Actions(self._transport).button_alternate_viewdetail()
+                self.Actions.button_alternate_viewdetail()
         self._update_leds()
     
     # *n125 - nope /  quantize
@@ -1052,7 +1020,7 @@ class mMiniLabMk2(ArturiaControlSurface):
             if self.application().view.is_view_visible(u'Detail/Clip'):
                 if value > 0:
                     # * shift, quantize
-                    Actions(self._transport).button_quantize_song()
+                    self.Actions.button_quantize_song()
         # * normal,
         else:
             self._update_leds()
@@ -1078,7 +1046,7 @@ class mMiniLabMk2(ArturiaControlSurface):
         else:
             if value > 0:
                 # * normal, new scene from play
-                Actions(self._transport).button_newscene_fplay()
+                self.Actions.button_newscene_fplay()
         self._update_leds()
     
     # * n127 - play stop scene / play stop clip
@@ -1087,13 +1055,13 @@ class mMiniLabMk2(ArturiaControlSurface):
         if self.shift_active or self.modo_clip_activo:
             if self.application().view.is_view_visible(u'Detail/Clip'):
                 # * shift, play stop clip
-                Actions(self._transport).button_playstop_clip(value)
+                self.Actions.button_playstop_clip(value)
         # * normal, play stop scene
         else:
             if self.enc8_button:
-                Actions(self._transport).button_playstop_scene(value)
+                self.Actions.button_playstop_scene(value)
             else:
-                Actions(self._transport).button_play_scene(value)
+                self.Actions.button_play_scene(value)
         self._update_leds()
     
     def clip_properties(self, clip):
@@ -1172,13 +1140,13 @@ class mMiniLabMk2(ArturiaControlSurface):
         try:
             presets = device.presets
             logger.info("device presets :: " + str(presets))
-        except:
-            logger.info("device presets :: no tiene")
+        except AttributeError as e:
+            logger.info("device presets :: " + str(e))
         try:
             bank_count = device.get_bank_count()
             logger.info("device bank_count :: " + str(bank_count))
-        except:
-            logger.info("device bank_count :: no tiene")
+        except AttributeError as e:
+            logger.info("device bank_count :: " + str(e))
     
     # ? Leds stuff
     def _update_leds(self):

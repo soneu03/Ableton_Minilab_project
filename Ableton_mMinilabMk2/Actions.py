@@ -6,17 +6,38 @@ logger = logging.getLogger(__name__)
 import Live
 from .Constants import *
 
-
-class Actions:
+class Actions(object):
     def __init__(self, transport):
+        # self._parent = parent
         self._transport = transport
         self.song_instance = self._transport.song()
+        self.__moveon_topdevice_cnt = 1
+        self.__moveinto_devices_cnt = 1
+        self.__seldevice_preset_cnt = 1
+        self.__nav_leftright_cnt = 1
+        self.__nav_updown_cnt = 1
+        self.__move_loop_cnt = 1
+        self.__loop_start_cnt = 1
+        self.__loop_end_cnt = 1
+        self.__start_marker_cnt = 1
+        self.__end_marker_cnt = 1
+        self.__dupdiv_loop_cnt = 1
+        self.__pitch_coarse_cnt = 1
+        self.__pitch_fine_cnt = 1
+        self.__set_gridquant_cnt = 1
     
     def application(self):
         return Live.Application.get_application()
     
     # * device change
     def enc_moveon_topdevice(self, value):
+        # * reduce sensitivity to make it easier to select items
+        # * https://github.com/raphaelquast/beatstep
+        self.__moveon_topdevice_cnt = (self.__moveon_topdevice_cnt + 1) % 6
+        # logger.info("__moveon_topdevice_cnt : " + str(self.__moveon_topdevice_cnt))
+        if self.__moveon_topdevice_cnt != 0:
+            return
+        self.__moveon_topdevice_cnt = 1
         
         track = self.song_instance.view.selected_track
         if track.devices:
@@ -48,38 +69,51 @@ class Actions:
                         self.device_collapsed(device_sel, next_device, IN_DEVICE_VIEW_COLLAPSED)
                         
 
-    def enc_moveinto_devices(self, value, sub_devices):
+    def enc_moveinto_devices(self, value, selecteddevice, sub_devices):
+        self.__moveinto_devices_cnt = (self.__moveinto_devices_cnt + 1) % 6
+        # logger.info("__moveinto_devices_cnt : " + str(self.__moveinto_devices_cnt))
+        if self.__moveinto_devices_cnt != 0:
+            return
+        self.__moveinto_devices_cnt = 1
+        device_list = []
+        if not selecteddevice:
+            return
+        if selecteddevice.can_have_drum_pads:
+            device_list = self.get_devicetype_list(sub_devices, "OriginalSimpler")
+        
         # * no actua si solo tiene un device
-        if len(sub_devices) > 1:
+        elif len(sub_devices) > 1:
             device_list = self.get_device_list(sub_devices)
-            # device_list = self.get_devicetype_list(sub_devices, "instrument")
-            track = self.song_instance.view.selected_track
-            device_sel = track.view.selected_device
-            if device_sel in device_list:
-                dev_index = device_list.index(device_sel)
+            # logger.info("__moveinto_devices : " + str(device_list))
+        if len(device_list) == 0:
+            return
+        track = self.song_instance.view.selected_track
+        device_sel = track.view.selected_device
+        if device_sel in device_list:
+            dev_index = device_list.index(device_sel)
+        else:
+            dev_index = 0
+        if value > 64:
+            if not dev_index == 0:
+                prev_device = device_list[dev_index - 1]
             else:
-                dev_index = 0
-            if value > 64:
-                if not dev_index == 0:
-                    prev_device = device_list[dev_index - 1]
-                else:
-                    prev_device = device_list[dev_index]
-                self.song_instance.view.select_device(prev_device, True)
-                self.song_instance.appointed_device = prev_device
-                # self.device_collapsed(device_sel, prev_device, True, "instrument")
-                self.device_collapsed(device_sel, prev_device, True)
-            
-            else:
-                if dev_index + 1 < len(device_list):
-                    next_device = device_list[dev_index + 1]
-                    self.song_instance.view.select_device(next_device, True)
-                    self.song_instance.appointed_device = next_device
-                    # self.device_collapsed(device_sel, next_device, True, "instrument")
-                    self.device_collapsed(device_sel, next_device, True)
+                prev_device = device_list[dev_index]
+            self.song_instance.view.select_device(prev_device, True)
+            self.song_instance.appointed_device = prev_device
+            # self.device_collapsed(device_sel, prev_device, True, "instrument")
+            self.device_collapsed(device_sel, prev_device, True)
+        
+        else:
+            if dev_index + 1 < len(device_list):
+                next_device = device_list[dev_index + 1]
+                self.song_instance.view.select_device(next_device, True)
+                self.song_instance.appointed_device = next_device
+                # self.device_collapsed(device_sel, next_device, True, "instrument")
+                self.device_collapsed(device_sel, next_device, True)
     
     def device_collapsed(self, device_sel, prev_or_next_device, device_collapsed=False, device_excluded=None):
         if device_sel is not None:
-            logger.info(" device to collapse type: " + str(device_sel.type) + "  name : " + str(device_sel.name))
+            # logger.info(" device to collapse type: " + str(device_sel.type) + "  name : " + str(device_sel.name))
             device_sel.view.is_collapsed = device_collapsed
             if device_sel.can_have_chains:
                 device_sel.view.is_collapsed = False
@@ -92,8 +126,12 @@ class Actions:
     
     # * Navigation Left Right
     def _nav_view_leftright(self, value, visible_view):
-        if value > 20:
-            # app_instance = self.application().get_application()
+        self.__nav_leftright_cnt = (self.__nav_leftright_cnt + 1) % 6
+        # logger.info("__nav_leftright_cnt : " + str(self.__nav_leftright_cnt))
+        if self.__nav_leftright_cnt != 0:
+            return
+        self.__nav_leftright_cnt = 1
+        if value > 64:
             self.application().view.scroll_view(self.application().view.NavDirection.left, visible_view, False)
         else:
             self.application().view.scroll_view(self.application().view.NavDirection.right, visible_view, False)
@@ -101,6 +139,11 @@ class Actions:
         # * Navigation Up Down
     
     def _nav_view_updown(self, value, visible_view):
+        self.__nav_updown_cnt = (self.__nav_updown_cnt + 1) % 6
+        # logger.info("__nav_updown_cnt : " + str(self.__nav_updown_cnt))
+        if self.__nav_updown_cnt != 0:
+            return
+        self.__nav_updown_cnt = 1
         if value > 20:
             self.application().view.scroll_view(self.application().view.NavDirection.up, visible_view, False)
         else:
@@ -108,6 +151,12 @@ class Actions:
     
     # * move loop position
     def enc_move_loop(self, value):
+        self.__move_loop_cnt = (self.__move_loop_cnt + 1) % 6
+        # logger.info("__move_loop_cnt : " + str(self.__move_loop_cnt))
+        if self.__move_loop_cnt != 0:
+            return
+        self.__move_loop_cnt = 1
+        
         clip = self.song_instance.view.detail_clip
         if clip:
             p_advance = self.move_quantity(clip)
@@ -120,6 +169,12 @@ class Actions:
     
     # * change loop start
     def enc_set_loop_start(self, value):
+        self.__loop_start_cnt = (self.__loop_start_cnt + 1) % 6
+        # logger.info("__loop_start_cnt : " + str(self.__loop_start_cnt))
+        if self.__loop_start_cnt != 0:
+            return
+        self.__loop_start_cnt = 1
+        
         clip = self.song_instance.view.detail_clip
         if clip:
             start = clip.loop_start
@@ -135,6 +190,12 @@ class Actions:
     
     # * change loop end
     def enc_set_loop_end(self, value):
+        self.__loop_end_cnt = (self.__loop_end_cnt + 1) % 6
+        # logger.info("__loop_end_cnt : " + str(self.__loop_end_cnt))
+        if self.__loop_end_cnt != 0:
+            return
+        self.__loop_end_cnt = 1
+        
         clip = self.song_instance.view.detail_clip
         if clip:
             start = clip.loop_start
@@ -150,6 +211,12 @@ class Actions:
     
     # * set start marker
     def enc_set_start_marker(self, value):
+        self.__start_marker_cnt = (self.__start_marker_cnt + 1) % 6
+        # logger.info("__start_marker_cnt : " + str(self.__start_marker_cnt))
+        if self.__start_marker_cnt != 0:
+            return
+        self.__start_marker_cnt = 1
+        
         clip = self.song_instance.view.detail_clip
         if clip:
             s_start = round(clip.start_marker, 2)
@@ -164,6 +231,12 @@ class Actions:
     
     # * set end marker
     def enc_set_end_marker(self, value):
+        self.__end_marker_cnt = (self.__end_marker_cnt + 1) % 6
+        # logger.info("__end_marker_cnt : " + str(self.__end_marker_cnt))
+        if self.__end_marker_cnt != 0:
+            return
+        self.__end_marker_cnt = 1
+        
         clip = self.song_instance.view.detail_clip
         if clip:
             e_marker = clip.end_marker
@@ -186,6 +259,12 @@ class Actions:
     
     # * duplicate-divide loop marker
     def enc_dupdiv_loop_marker(self, value):
+        self.__dupdiv_loop_cnt = (self.__dupdiv_loop_cnt + 1) % 6
+        # logger.info("__dupdiv_loop_cnt : " + str(self.__dupdiv_loop_cnt))
+        if self.__dupdiv_loop_cnt != 0:
+            return
+        self.__dupdiv_loop_cnt = 1
+        
         clip = self.song_instance.view.detail_clip
         if clip:
             if clip.is_audio_clip and not clip.warping:
@@ -211,6 +290,12 @@ class Actions:
             clip.view.show_loop()
 
     def enc_pitch_coarse(self, value):
+        self.__pitch_coarse_cnt = (self.__pitch_coarse_cnt + 1) % 4
+        # logger.info("__dupdiv_loop_cnt : " + str(self.__dupdiv_loop_cnt))
+        if self.__pitch_coarse_cnt != 0:
+            return
+        self.__pitch_coarse_cnt = 1
+        
         clip = self.song_instance.view.detail_clip
         if not clip.is_audio_clip:
             return
@@ -224,6 +309,12 @@ class Actions:
                 clip.pitch_coarse = pitch
 
     def enc_pitch_fine(self, value):
+        self.__pitch_fine_cnt = (self.__pitch_fine_cnt + 1) % 4
+        # logger.info("__pitch_fine_cnt : " + str(self.__pitch_fine_cnt))
+        if self.__pitch_fine_cnt != 0:
+            return
+        self.__pitch_fine_cnt = 1
+        
         clip = self.song_instance.view.detail_clip
         if not clip.is_audio_clip:
             return
@@ -280,7 +371,7 @@ class Actions:
         track = self.song_instance.view.selected_track
         slot_idx = track.playing_slot_index
         if slot_idx != -1:
-            logger.info(" : slot : " + str(slot_idx))
+            # logger.info(" : slot : " + str(slot_idx))
             slots = list(track.clip_slots)
             playing_slot = slots[slot_idx]
             if playing_slot.has_clip:
@@ -289,22 +380,18 @@ class Actions:
                 self.song_instance.view.detail_clip = clip
                 if SESSION_FOLLOWS_CLIP:
                     self.song_instance.view.highlighted_clip_slot = playing_slot
+
+    
     
     def button_activate_device(self):
         track = self.song_instance.view.selected_track
         if track.devices:
             appo_device = self.song_instance.appointed_device
-            logger.info(
-                "mMiniLabMk2 = DEVICES class name : " + str(appo_device.class_name) + "  name : " + str(
-                    appo_device.name
-                )
-            )
             self.song_instance.view.select_device(appo_device, True)
             # appo_device.view.is_collapsed = False
-            if appo_device.can_have_chains:
-                logger.info("DEVICE tiene macros : " + str(appo_device.has_macro_mappings))
-                for chain in appo_device.chains:
-                    logger.info("DEVICE chain : " + str(chain))
+            # if appo_device.can_have_chains:
+            #     logger.info("DEVICE tiene macros : " + str(appo_device.has_macro_mappings))
+            #     logger.info("DEVICE chains number : " + str(len(appo_device.chains)))
             
             if appo_device.is_active:
                 appo_device.is_enabled = False
@@ -319,7 +406,7 @@ class Actions:
         else:
             current_track.arm = True
             self.song_instance.overdub = True
-        logger.info(" Button :: button_armoverdub")
+        # logger.info(" Button :: button_armoverdub")
     
     def button_playpause(self):
         if self.song_instance.is_playing:
@@ -328,7 +415,7 @@ class Actions:
             if self.song_instance.current_song_time > 0:
                 self.song_instance.continue_playing()
             self.song_instance.start_playing()
-        logger.info(" Button :: button_playpause")
+        # logger.info(" Button :: button_playpause")
     
     def button_overdub(self):
         if self.song_instance.overdub:
@@ -454,6 +541,12 @@ class Actions:
     
     
     def enc_set_gridquant_value(self, value):
+        self.__set_gridquant_cnt = (self.__set_gridquant_cnt + 1) % 6
+        # logger.info("__set_gridquant_cnt : " + str(self.__set_gridquant_cnt))
+        if self.__set_gridquant_cnt != 0:
+            return
+        self.__set_gridquant_cnt = 1
+        
         clip = self.song_instance.view.detail_clip
         if clip and self.application().view.is_view_visible(u'Detail/Clip'):
             qg_actual_index = 0
@@ -548,13 +641,13 @@ class Actions:
         try:
             presets = device.presets
             logger.info("device presets :: " + str(presets))
-        except:
-            logger.info("device presets :: no tiene")
+        except AttributeError as e:
+            logger.info("device presets :: " + str(e))
         try:
             bank_count = device.get_bank_count()
             logger.info("device bank_count :: " + str(bank_count))
-        except:
-            logger.info("device bank_count :: no tiene")
+        except AttributeError as e:
+            logger.info("device bank_count :: " + str(e))
     
     def get_device_list(self, container):
         # add each device in order. if device is a rack, process each chain recursively
@@ -572,3 +665,129 @@ class Actions:
             except:
                 continue
         return lst
+
+    def get_devicetype_list(self, container, devclassnm=None):
+        lst = []
+        for dev in container:
+            # logger.info("__moveinto_devices : " + str(dev.class_name))
+            if devclassnm != None:
+                if str(dev.class_name) == devclassnm:
+                    # self.device_properties(dev)
+                    lst.append(dev)
+                    try:
+                        if dev.can_have_chains:  # is a rack and it's open
+                            if dev.view.is_showing_chain_devices:
+                                for ch in dev.chains:
+                                    lst += self.get_device_list(ch.devices)
+                    except:
+                        continue
+        return lst
+
+    def _enc_simpler_fadein(self, dev, value):
+        # * shift, simpler fade in/attack
+        params = list(dev.parameters)
+        fade_in = None
+        # * not classic mode
+        if dev.playback_mode != 0:
+            for p in params:
+                if str(p.original_name) == "Fade In":
+                    if p.is_enabled:
+                        fade_in = p
+        # * 1-shot or slice mode
+        else:
+            for p in params:
+                if str(p.original_name) == "Ve Attack":
+                    if p.is_enabled:
+                        fade_in = p
+        if fade_in:
+            if value > 64:
+                fade_in_value = fade_in.value - 0.001
+            else:
+                fade_in_value = fade_in.value + 0.001
+            if fade_in_value >= fade_in.min:
+                if fade_in_value <= fade_in.max:
+                    fade_in.value = fade_in_value
+
+    def _enc_simpler_fadeout(self, dev, value):
+        params = list(dev.parameters)
+        fade_out = None
+        # * not classic mode
+        if dev.playback_mode != 0:
+            for p in params:
+                if str(p.original_name) == "Fade Out":
+                    if p.is_enabled:
+                        fade_out = p
+        # * 1-shot or slice mode
+        else:
+            for p in params:
+                if str(p.original_name) == "Ve Release":
+                    if p.is_enabled:
+                        fade_out = p
+        if fade_out:
+            if value > 64:
+                fade_out_value = fade_out.value - 0.001
+            else:
+                fade_out_value = fade_out.value + 0.001
+            if fade_out_value >= fade_out.min:
+                if fade_out_value <= fade_out.max:
+                    fade_out.value = fade_out_value
+
+    def _enc_seldevice_preset(self, value):
+        self.__seldevice_preset_cnt = (self.__seldevice_preset_cnt + 1) % 6
+        # logger.info("__seldevice_preset_cnt : " + str(self.__seldevice_preset_cnt))
+        if self.__seldevice_preset_cnt != 0:
+            return
+        self.__seldevice_preset_cnt = 1
+    
+        presets = None
+        actual_preset = None
+        appo_device = self.song_instance.appointed_device
+        if appo_device.can_have_chains:
+            chain_selected = appo_device.view.selected_chain
+            chain_devices = chain_selected.devices
+            if len(chain_devices) > 0:
+                for device in chain_devices:
+                    if presets is not None:
+                        break
+                    try:
+                        if device.presets:
+                            presets = device.presets
+                            actual_preset = device.selected_preset_index
+                            appo_device = device
+                    except:
+                        pass
+        else:
+            try:
+                if appo_device.presets:
+                    presets = appo_device.presets
+                    actual_preset = appo_device.selected_preset_index
+            except:
+                pass
+        if presets is not None:
+            total_presets = len(presets) - 1
+            if value > 64:
+                if actual_preset == 0:
+                    actual_preset = total_presets
+                else:
+                    actual_preset = actual_preset - 1
+                appo_device.selected_preset_index = actual_preset
+                message = str(appo_device.name) + " < " + str(actual_preset) + " - " + str(presets[actual_preset])
+                return message
+                # self.show_message(
+                #     str(appo_device.name) + " < " + str(actual_preset) + " - " + str(
+                #         presets[actual_preset]
+                #     )
+                # )
+            else:
+                if actual_preset == total_presets:
+                    actual_preset = 0
+                else:
+                    actual_preset = actual_preset + 1
+                appo_device.selected_preset_index = actual_preset
+                # self.show_message(
+                #     str(appo_device.name) + " > " + str(actual_preset) + " - " + str(
+                #         presets[actual_preset]
+                #     )
+                # )
+                message = str(appo_device.name) + " > " + str(actual_preset) + " - " + str(presets[actual_preset])
+                return message
