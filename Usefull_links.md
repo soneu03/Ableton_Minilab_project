@@ -42,4 +42,8 @@ https://github.com/lebrunthibault/Protocol-0-Surface-Script
 
 - Hanz Petrov for his [Introduction to the Framework-classes](https://livecontrol.q3f.org/ableton-liveapi/articles/introduction-to-the-framework-classes/) and the corresponding [remotescripts-blog](http://remotescripts.blogspot.com)
 
+- @LilSmeag [MiniLab Mk2 Ableton Mode modified functionality](https://forum.arturia.com/index.php?topic=102839.0))
+
+- _and others..._
+
 ---
