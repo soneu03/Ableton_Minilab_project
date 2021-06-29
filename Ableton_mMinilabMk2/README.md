@@ -42,7 +42,7 @@ Pero no me interesaba la línea 2 (pads 9-16) en el funcionamiento original.
 - _PADS_2 = 9, 10, 11, 12, 13, 14, 15, 16_
   
 Ahora, los pads 9-16 quedan así:
- ######_Modo Normal_:
+ ###### _Modo Normal_:
 
     Pad_9 = Global Play;
     Pad_10: Global Stop; 
@@ -53,7 +53,7 @@ Ahora, los pads 9-16 quedan así:
     Pad_15 = Nueva escena a partir de lo reproducido, si no hay nada reproduciendo crea una escena en blanco;
     Pad_16 = Play / Stop escena
 
-######_Modo Clip_:
+###### _Modo Clip_:
 
     Pad_9 = Overdub;
     Pad_10: Undo; 
@@ -64,7 +64,7 @@ Ahora, los pads 9-16 quedan así:
     Pad_15 = Srub / Continue (stop Scrub) Clip;
     Pad_16 = Play / Pause Clip;
 
-###Modo Clip
+### Modo Clip
         Para entrar en modo Clip mantener pulsado _SHIFT_ y presionar el _Knob_ 9
 
 
@@ -87,7 +87,7 @@ instrumentos, así será más ágil la modificación de los parámetros. Interes
 [“The Blue Hand” for Instant Mapping in Ableton Live](https://performodule.com/2015/08/09/the-blue-hand-for-instant-mapping-in-ableton-live/).
 
 ##### Knob 6, 7, 14 y 15:
-- ######_Modo Normal_:
+- ###### _Modo Normal_:
       Knob 6:  
       Volumen de envío A
     
@@ -103,7 +103,7 @@ instrumentos, así será más ágil la modificación de los parámetros. Interes
       Knob 8:
       Paneo de pista
 
-- ######_Modo Clip_ (vista Device):
+- ###### _Modo Clip_ (vista Device):
       Knob 6:
       Si el Device tiene presets, cambia entre estos. Si el Device es un Sampler actúa sobre el
       ataque (Attack)
@@ -120,7 +120,7 @@ instrumentos, así será más ágil la modificación de los parámetros. Interes
       Knob 8:
       Paneo de pista
 
-- ######_Modo Clip_ (vista Clip):
+- ###### _Modo Clip_ (vista Clip):
       Knob 6:
       Mueve el marcador de inicio del clip
     
@@ -141,7 +141,7 @@ instrumentos, así será más ágil la modificación de los parámetros. Interes
 Siempre cambia el Volumen de pista
 
 
-###Instalación
+### Instalación
 Para Ableton Live 10
 En Windows 10 copia toda la carpeta en
 \ProgramData\Ableton\Live x.x\Resources\MIDI Remote Scripts\
