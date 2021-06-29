@@ -142,10 +142,13 @@ Siempre cambia el Volumen de pista
 
 
 ### Instalación
-Para Ableton Live 10
+Para Ableton Live 10.1.30 (python 2.7)
+
 En Windows 10 copia toda la carpeta en
 \ProgramData\Ableton\Live x.x\Resources\MIDI Remote Scripts\
+
 Selecciona el script _Ableton mMinilabMk2_ en las opciones MIDI de Live.
+
 Por supuesto, conecta el MiniLab y selecciona el banco 8.
 
 
