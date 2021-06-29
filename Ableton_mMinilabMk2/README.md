@@ -164,6 +164,13 @@ _Ableton_mMinilabMk2.minilabmk2_
 Pero no garantizo que no haya que cambiar el canal en el archivo mMiniLabMk2.py, si no te funciona cambia el canal (de 0 a 16)
 y carga de nuevo Ableton con _ctrl + N_.
 
+### IDE
+pyCharm 2021.1.2 CE
+
+plugins:
+Comment highlighter
+
+___
 
 ```# ?                                                                plugin preset   move loop      pan
 # ?   h.scroll        |----------  device controls ---------|  loop start/attack   release    dup-div loop
